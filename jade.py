@@ -78,12 +78,13 @@ class JEventing:
         super().__init__()
 
     def tick(self):
+        print("Global tick")
         turns = self.get_var("_turns", 0) + 1
         self.set_var("_turns", turns)
 
         self.trigger_all("tick")
 
-        for obj in self.all_objects:
+        for key, obj in self.all_objects.items():
             if obj["events"].get("tick", None) != None:
                 for evt in obj["events"]["tick"]:
                     self.run(evt, target = obj, source = "tick")
@@ -93,6 +94,13 @@ class JEventing:
             self.events[event_name] = []
 
         self.events[event_name].append(function_name)
+
+    def hook(self, object_id, event_name, function_name):
+        ob = self.get_object(object_id)
+        if ob["events"].get(event_name, None) == None:
+            ob["events"][event_name] = []
+
+        ob["events"][event_name].append(function_name)
 
     def trigger_first(self, event, **args):
         if self.events.get(event, None) != None and len(self.events[event]) > 0:
@@ -113,7 +121,35 @@ class JEventing:
             for evt in self.events[event]:
                 self.run(evt, **args)
 
-class JActions:
+class JFunc:
+    def __init__(self):
+        # str -> fn : functions that game scripting can call
+        self.functions = {}
+        self.register("action_say", self._say)
+        self.register("action_move", self._move)
+        self.register("action_look", self._look)
+        self.register("action_save", lambda **args: self.save_state(sub_key = args['line']))
+        self.register("action_load", lambda **args: self.load_state(path = f"{self.app_path}/states/{args['line']}.json"))
+        #@todo add save/load functions and commands
+
+        # str -> str : actions the player takes, points to a function
+        self.actions = {}
+        
+        self.add_action("say", "action_say")
+        self.add_action("move", "action_move")
+        self.add_action("look", "action_look")
+        self.add_action("save", "action_save")
+        self.add_action("load", "action_load")
+        super().__init__()
+
+    def run(self, fn_name, **args):
+        if self.functions.get(fn_name) != None:
+            self.functions[fn_name](**args)
+
+    def register(self, fn_name, fn):
+        self.functions[fn_name] = fn
+
+
     def readln(self, line):
         act = line.split(" ")[0]
         ln = " ".join(line.split(" ")[1:])
@@ -121,35 +157,47 @@ class JActions:
 
     def run_action(self, name, line):
         if self.actions.get(name):
-            self.actions[name](engine = self, line = line)
+            self.run(self.actions[name], engine = self, line = line)
+            self.tick()
             return True
         return False
+
+    def add_action(self, name, fn_name):
+        self.actions[name] = fn_name
+
+
+    def _save_state(self, **args):
+        engine, line = self._ctx(**args)
+        engine.save_state(sub_key = line)
+
+ 
+    def _load_state(self, **args):
+        engine, line = self._ctx(**args)
+        engine.load_state(path = f"{self.app_path}/states/{line}.json")
+
+    def _echo(self, jade, str):
+        print(str)
+
+    def _ctx(self, **args):
+        return args["engine"], args["line"]
 
     def _say(self, **args):
         self.writeln(sender = "Player", line = args.get("line"))
 
-    def __init__(self):
-        # str -> str : actions the player takes, points to a function
-        self.actions = {}
+    def _move(self, **args):
+        engine, line = self._ctx(**args)
+        print(engine, line)
+        engine.walk(line)
 
-        self.actions["say"] = self._say
-        super().__init__()
-
-class JFunc:
-    def _echo(self, jade, str):
-        print(str)
-    
-    def run(self, fn_name, **args):
-        if self.functions.get(fn_name) != None:
-            self.functions[fn_name](**args)
-
-    def __init__(self):
-        # str -> fn : functions that game scripting can call
-        self.functions = {}
-
-        self.functions["echo"] = self._echo
-        super().__init__()
-
+    def _look(self, **args):
+        engine, line = self._ctx(**args)
+        player, location = self.current()
+        self.writeln(line = location["name"])
+        for k, d in location["exits"].items():
+            if d["target"] != "":
+                target = self.get_object(d['target'])
+                self.writeln(line = f"{target['name']} is {k}ward.")
+                
 class JObjectManager:
     def __init__(self):
         self.all_objects = {}
@@ -191,15 +239,21 @@ class JObjectManager:
         ob["location"] = new_zone
 
     def walk(self, direction):
-        print(self.player_id(), self.get_object(self.player_id()))
-        self.walk_actor(self.player_id(), direction)
+        if direction in self._directions():
+            return self.walk_actor(self.player_id(), direction)
+        return False
 
     def walk_actor(self, id, direction):
         ob = self.get_object(id, "actor")
         cz = self.get_object(ob["location"])
         nz = cz["exits"][direction]["target"]
+        if nz == "": return False
 
-        self.move_actor(id, nz)
+        if cz["exits"][direction]["locked"] == False:
+            self.move_actor(id, nz)
+            return True
+        else:
+            return False
 
     def player_id(self):
         return self.get_meta("player")
@@ -233,33 +287,51 @@ class JObjectManager:
 
 class JSaveStateManager:
     def __init__(self):
-        self.game_id = ""
         super().__init__()
 
-    def save_state(self, path):
-        import json
-        with open(path, "w+") as f:
+    def save_state(self, *, save_dir = None, sub_key = ""):
+        import json, os
+        if save_dir == None: save_dir = self.app_path+"states/"
+
+        idg = self.get_meta("game_id", "")
+        if idg == "": return False
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        if sub_key != "": sub_key = f"_{sub_key.replace(' ', '_')}"
+
+        with open(save_dir+idg+sub_key+".json", "w+") as f:
             d = {
                 "variables": self.variables,
                 "actions": self.actions,
                 "events": self.events,
-                "meta": self.meta
+                "meta": self.meta,
+                "objects": self.all_objects
             }
-            json.dump(d, f)
+            json.dump(d, f, indent=4)
+            return True
 
-    def load_state(self, path):
+    def load_state(self, *, path):
         import json
+        print("loading", path)
         with open(path, "r") as f:
             data = json.load(f)
             self.variables = data.get("variables", {})
             self.actions = data.get("actions", {})
             self.events = data.get("events", {})
             self.meta = data.get("meta", {})
+            self.all_objects = data.get("objects", {})
+
+            
 
             # make it get extensions from meta to load files to load the functions
 
-class JadeEngine(JFunc, JActions, JEventing, JObjectManager, JTemplates, JSaveStateManager):
+class JadeEngine(JFunc, JEventing, JObjectManager, JTemplates, JSaveStateManager):
     def __init__(self):
+        import os, json
+        self.app_path = os.path.dirname(os.path.realpath(__file__))+"/"
+
         # str -> str : story details
         self.meta = {}
 
@@ -268,6 +340,12 @@ class JadeEngine(JFunc, JActions, JEventing, JObjectManager, JTemplates, JSaveSt
 
         self.buffer = []
 
+        self.config = {}
+
+        if os.path.exists(self.app_path+"config.json"):
+            with open(self.app_path+"config.json", "r") as f:
+                self.config = json.load(f)
+                
         super().__init__()
 
     def writeln(self, **args): 

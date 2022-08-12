@@ -1,0 +1,186 @@
+{
+    "variables": {},
+    "actions": {
+        "say": "action_say",
+        "move": "action_move",
+        "look": "action_look",
+        "save": "action_save",
+        "load": "action_load"
+    },
+    "events": {
+        "bork": [
+            "test"
+        ]
+    },
+    "meta": {
+        "game_id": "deus ex",
+        "game_name": "Deus Ex: Momento Mori",
+        "author": "Technomancer",
+        "player": "jcd"
+    },
+    "objects": {
+        "docks": {
+            "id": "docks",
+            "name": "Docks",
+            "description": "The UNATCO Island docks.",
+            "contains": [
+                "jcd"
+            ],
+            "type": "zone",
+            "exits": {
+                "north": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "east": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "west": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "south": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "up": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "down": {
+                    "target": "under_docks",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "in": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "out": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                }
+            },
+            "events": {}
+        },
+        "under_docks": {
+            "id": "under_docks",
+            "name": "Under the Docks",
+            "description": "Underwater.",
+            "contains": [],
+            "type": "zone",
+            "exits": {
+                "north": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "east": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "west": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "south": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "up": {
+                    "target": "docks",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "down": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "in": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                },
+                "out": {
+                    "target": "",
+                    "locked": false,
+                    "events": {
+                        "on_exit": [],
+                        "on_exit_failed": []
+                    }
+                }
+            },
+            "events": {}
+        },
+        "jcd": {
+            "id": "jcd",
+            "name": "DEFAULT_NAME",
+            "description": "DEFAULT_DESCRIPTION",
+            "contains": [],
+            "location": "docks",
+            "type": "actor",
+            "events": {
+                "tick": [
+                    "player_tick"
+                ]
+            }
+        }
+    }
+}
