@@ -6,7 +6,7 @@ def playertick(**args):
 
 def build(jade):
     jade.set_meta("game_id", "deusex")
-    jade.set_meta("game_name", "Deus Ex: Momento Mori")
+    jade.set_meta("game_name", "Deus Ex")
     jade.set_meta("author", "Technomancer")
 
     jade.functions["test"] = test
