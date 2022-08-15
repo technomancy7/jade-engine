@@ -1,1 +1,0 @@
-{"variables": {}, "actions": {"say": "action_say", "move": "action_move", "look": "action_look", "save": "action_save", "load": "action_load"}, "events": {"bork": ["test"]}, "meta": {"game_id": "deus ex", "game_name": "Deus Ex: Momento Mori", "author": "Technomancer", "player": "jcd"}}
